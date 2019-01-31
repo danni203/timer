@@ -1,0 +1,5 @@
+WindowsDisplay	KEYWORD1
+LoadWindows	KEYWORD2
+windowpanel	KEYWORD2
+check_load_window	KEYWORD2
+
