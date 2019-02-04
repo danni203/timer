@@ -45,10 +45,11 @@ SoftDMD dmd(2, 1, 9, 6, 7, 8, 13, 11); // DMD controls the entire display
 
 //File file;
 
-#define ROW_DIM 40
-#define COL_DIM 2
-WindowsDisplay  WindowsDisplay(ROW_DIM, COL_DIM);
+//#define ROW_DIM 40
+//#define COL_DIM 2
+WindowsDisplay  WindowsDisplay;
 ProcessTime ProcessTime;
+/*
 struct {
   int NROWS = 0;
   long array[ROW_DIM][COL_DIM];
@@ -57,7 +58,7 @@ struct {
   int current_window = 0;
 
 } windows;
-
+*/
 
 time_t utctolocal(time_t utc)
 {
@@ -79,12 +80,12 @@ void setup()  {
   cur_t = now();
 
 #ifdef DEBUG
-  windows.array[0][0] = cur_t + 22; windows.array[0][1] = windows.array[0][0] + 20;
-  windows.array[1][0] =  windows.array[0][1] + 18; windows.array[1][1] = windows.array[1][0] + 25;
-  windows.array[2][0] = windows.array[0][2] + 14; windows.array[2][1] = windows.array[2][0] + 28;
-  windows.NROWS = 3;
+  WindowsDisplay.array[0][0] = cur_t + 22; WindowsDisplay.array[0][1] = WindowsDisplay.array[0][0] + 20;
+  WindowsDisplay.array[1][0] =  WindowsDisplay.array[0][1] + 18; WindowsDisplay.array[1][1] = WindowsDisplay.array[1][0] + 25;
+  WindowsDisplay.array[2][0] = WindowsDisplay.array[0][2] + 14; WindowsDisplay.array[2][1] = WindowsDisplay.array[2][0] + 28;
+  WindowsDisplay.NROWS = 3;
 #else
-  WindowsDisplay.LoadWindows(cur_t, windows.NROWS, windows.array);
+  WindowsDisplay.LoadWindows(cur_t);
 #endif
 
   Serial1.print('A');
@@ -109,7 +110,7 @@ void setup()  {
     windows[4] = windows[3] + 90; windows[5] = windows[4] + 90;
     windows[6] = windows[5] + 900; windows[7] = windows[6] + 900;
   */
-  windows.w_open = windows.w_close = cur_t;
+  WindowsDisplay.w_open = WindowsDisplay.w_close = cur_t;
 }
 
 void timepanel(int offs, int count) {
@@ -205,24 +206,24 @@ window_state machine_state(void)
 {
   window_state win_state;
 
-  if (windows.w_open != 0 && windows.w_close != 0 && windows.w_open < windows.w_close && windows.w_close >= cur_t) {
-    if (cur_t > windows.w_open) win_state = WINSIDE;
+  if (WindowsDisplay.w_open != 0 && WindowsDisplay.w_close != 0 && WindowsDisplay.w_open < WindowsDisplay.w_close && WindowsDisplay.w_close >= cur_t) {
+    if (cur_t > WindowsDisplay.w_open) win_state = WINSIDE;
     else win_state = WVALID;
   }
   else win_state = WINVALID;
 
-  if (win_state == WINSIDE && (windows.w_close - cur_t) < 10) {
-    if (win_state == WINSIDE && windows.w_close == cur_t) win_state = WCLOSEDALARM;
+  if (win_state == WINSIDE && (WindowsDisplay.w_close - cur_t) < 10) {
+    if (win_state == WINSIDE && WindowsDisplay.w_close == cur_t) win_state = WCLOSEDALARM;
     else win_state = WENDINGALARM;
   }
-  else if (win_state == WVALID && (windows.w_open - cur_t) < 10) win_state = WBEGINALARM;
+  else if (win_state == WVALID && (WindowsDisplay.w_open - cur_t) < 10) win_state = WBEGINALARM;
   return (win_state);
 }
 
 
 void loop() {
   int window_closed_flag = 0;
-  static bool chk = WindowsDisplay.check_load_window(cur_t,windows.NROWS, windows.current_window, windows.array,windows.w_open, windows.w_close);
+  static bool chk = WindowsDisplay.check_load_window(cur_t);
 
   while (Serial.available() > 0) ProcessTime.processSyncMessage(tz_offs, cur_t);
 
@@ -232,9 +233,9 @@ void loop() {
   if (!digitalRead(EXT_BTN_1)){
     // want to increment window here
     // need to check for max windows...
-    if (windows.current_window < windows.NROWS+1){
+    if (WindowsDisplay.current_window < WindowsDisplay.NROWS+1){
       window_opening_alarm();
-      ++windows.current_window;
+      ++WindowsDisplay.current_window;
       Serial.print("  window incr. #");
     }
     else{
@@ -244,15 +245,15 @@ void loop() {
     // write a big W + window number to LED panel
     dmd.drawFilledBox(36, 0, 32 + 32, 15, GRAPHICS_OFF) ; //clear the right window
     char buff20[12];
-    sprintf(buff20, "W%02d", windows.current_window);
+    sprintf(buff20, "W%02d", WindowsDisplay.current_window);
     dmd.drawString(40, 0, String(buff20));
-    Serial.println(windows.current_window);
+    Serial.println(WindowsDisplay.current_window);
   }
   if (!digitalRead(EXT_BTN_2)){
     // want to decrement window here
-    if (windows.current_window > 0){
+    if (WindowsDisplay.current_window > 0){
       window_opening_alarm();
-      --windows.current_window;
+      --WindowsDisplay.current_window;
       Serial.print("  window decr. #");
     }
     else{
@@ -262,9 +263,9 @@ void loop() {
     // write a big W + window number to LED panel
     dmd.drawFilledBox(36, 0, 32 + 32, 15, GRAPHICS_OFF) ; //clear the right window
     char buff20[12];
-    sprintf(buff20, "W%02d", windows.current_window);
+    sprintf(buff20, "W%02d", WindowsDisplay.current_window);
     dmd.drawString(40, 0, String(buff20));
-    Serial.println(windows.current_window);
+    Serial.println(WindowsDisplay.current_window);
   }
 
 
@@ -272,7 +273,7 @@ void loop() {
 
   if (cur_t % 60 == 0) {
     ProcessTime.printDateTime(cur_t, utctolocal(cur_t));
-    Serial.print("window #"); Serial.println(windows.current_window);
+    Serial.print("window #"); Serial.println(WindowsDisplay.current_window);
   }
 
   /*hang waiting for second to roll*/
@@ -291,7 +292,7 @@ void loop() {
 
   timepanel(0, count);
   // int loop = 0;
-  if ( win_state != WINVALID) WindowsDisplay.windowpanel(dmd, cur_t, 32, count,windows.w_open,windows.w_close);
+  if ( win_state != WINVALID) WindowsDisplay.windowpanel(dmd, cur_t, 32, count);
   else timepanel(32, count);
 
   switch (win_state) {
@@ -303,7 +304,7 @@ void loop() {
       break;
   }
 
-  WindowsDisplay.check_load_window(cur_t,windows.NROWS, windows.current_window, windows.array,windows.w_open, windows.w_close);
+  WindowsDisplay.check_load_window(cur_t);
   count++;
 
 }
