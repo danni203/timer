@@ -22,13 +22,13 @@ const uint8_t CS_PIN = 25;
 SdFatSoftSpi<SOFT_MISO_PIN, SOFT_MOSI_PIN, SOFT_SCK_PIN> SD;
 File file;
 
-
-WindowsDisplay :: WindowsDisplay(int row, int col)
+/*
+WindowsDisplay :: WindowsDisplay()
 {
   
-  ROW_DIM = row;
-  COL_DIM = col;
+ 
 }
+*/
 size_t readField(File* file, char* str, size_t size, const char* delim) {
   char ch;
   size_t n = 0;
@@ -45,7 +45,7 @@ size_t readField(File* file, char* str, size_t size, const char* delim) {
   str[n] = '\0';
   return n;
 }
-void WindowsDisplay:: LoadWindows(time_t cur_t, int NROWS,long array[40][2])
+void WindowsDisplay:: LoadWindows(time_t cur_t)
 {
   // Initialize the SD.
   if (SD.begin(CS_PIN)) {
@@ -118,7 +118,7 @@ void WindowsDisplay:: LoadWindows(time_t cur_t, int NROWS,long array[40][2])
 }
 
 
-void WindowsDisplay::windowpanel(SoftDMD dmd,time_t cur_t, int offs, int count,time_t w_open,time_t w_close) {
+void WindowsDisplay::windowpanel(SoftDMD dmd,time_t cur_t, int offs, int count) {
   char buf1[12], buf2[12];
   long t = cur_t;
   bool in_window = false;
@@ -241,7 +241,7 @@ void WindowsDisplay::windowpanel(SoftDMD dmd,time_t cur_t, int offs, int count,t
 }
 
 
-bool WindowsDisplay::check_load_window(time_t cur_t,int NROWS, int current_window, long array[40][2],time_t w_open, time_t w_close)
+bool WindowsDisplay::check_load_window(time_t cur_t)
 {
   time_t t;
   t = cur_t;
